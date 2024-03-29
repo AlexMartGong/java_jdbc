@@ -1,5 +1,6 @@
 package org.ax.java.jdbc.repository;
 
+import org.ax.java.jdbc.model.Category;
 import org.ax.java.jdbc.model.Product;
 import org.ax.java.jdbc.util.ConnectionDatabase;
 
@@ -16,7 +17,8 @@ public class ProductRepository implements Repository<Product> {
     public List<Product> listAll() {
         List<Product> productList = new ArrayList<>();
 
-        try (Statement stmt = getConnection().createStatement(); ResultSet rs = stmt.executeQuery("SELECT * FROM products")) {
+        try (Statement stmt = getConnection().createStatement(); ResultSet rs = stmt.executeQuery("SELECT p.*, c.name " +
+                "as category FROM products as p INNER JOIN category as c ON (p.category_id=c.id)")) {
 
             while (rs.next()) {
                 Product p = createProduct(rs);
@@ -34,7 +36,8 @@ public class ProductRepository implements Repository<Product> {
     public Product byId(Long id) {
         Product product = null;
 
-        try (PreparedStatement stmt = getConnection().prepareStatement("SELECT * FROM products WHERE id=?")) {
+        try (PreparedStatement stmt = getConnection().prepareStatement("SELECT p.*, c.name " +
+                "as category FROM products as p INNER JOIN category as c ON (p.category_id=c.id) WHERE p.id=?")) {
 
             stmt.setLong(1, id);
             try (ResultSet rs = stmt.executeQuery()) {
@@ -53,18 +56,19 @@ public class ProductRepository implements Repository<Product> {
     public void save(Product product) {
         String sql;
         if (product.getId() != null && product.getId() > 0) {
-            sql = "UPDATE products SET name=?, price=? WHERE id=?";
+            sql = "UPDATE products SET name=?, price=?, category_id=? WHERE id=?";
         } else {
-            sql = "INSERT INTO products(name, price, date_registration) VALUES(?,?,?)";
+            sql = "INSERT INTO products(name, price, category_id, date_registration) VALUES(?,?,?,?)";
         }
         try (PreparedStatement stmt = getConnection().prepareStatement(sql)) {
             stmt.setString(1, product.getName());
             stmt.setLong(2, product.getPrice());
+            stmt.setLong(3, product.getCategory().getId());
 
             if (product.getId() != null && product.getId() > 0) {
-                stmt.setLong(3, product.getId());
+                stmt.setLong(4, product.getId());
             } else {
-                stmt.setDate(3, new Date(product.getDateRegistry().getTime()));
+                stmt.setDate(4, new Date(product.getDateRegistry().getTime()));
             }
 
             stmt.executeUpdate();
@@ -87,10 +91,14 @@ public class ProductRepository implements Repository<Product> {
 
     private static Product createProduct(ResultSet rs) throws SQLException {
         Product p = new Product();
+        Category c = new Category();
         p.setId(rs.getLong("id"));
         p.setName(rs.getString("name"));
         p.setPrice(rs.getInt("price"));
         p.setDateRegistry(rs.getDate("date_registration"));
+        c.setId(rs.getLong("category_id"));
+        c.setName(rs.getString("category"));
+        p.setCategory(c);
         return p;
     }
 }

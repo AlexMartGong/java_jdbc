@@ -1,5 +1,6 @@
 package org.ax.java.jdbc;
 
+import org.ax.java.jdbc.model.Category;
 import org.ax.java.jdbc.model.Product;
 import org.ax.java.jdbc.repository.ProductRepository;
 import org.ax.java.jdbc.repository.Repository;
@@ -20,9 +21,12 @@ public class ExampleJdbc {
             System.out.println(repository.byId(2L));
             System.out.println("====================insert new product==============");
             Product p = new Product();
-            p.setName("Base infriadora laptop");
-            p.setPrice(500);
+            Category c = new Category();
+            p.setName("Base para laptop");
+            p.setPrice(350);
             p.setDateRegistry(new Date());
+            c.setId(3L);
+            p.setCategory(c);
             repository.save(p);
             System.out.println("Product save");
             repository.listAll().forEach(System.out::println);
